@@ -1,459 +1,256 @@
-# BeyoundChats Content Pipeline - Phase One
+# BeyondChats Content Pipeline
 
-A production-ready Node.js web scraper for automatically collecting and storing articles from the BeyondChats blog into MongoDB. Phase 1 focuses on **automated article discovery, web scraping, and persistent storage** with built-in duplicate detection and error handling.
+A full-stack web application for automated article ingestion, AI-powered content enhancement, and intelligent dashboard management. Built with Node.js, React, MongoDB, and Tailwind CSS.
 
-**Status**: ✅ **Fully Operational** - Scrapes 5+ articles per run with MongoDB integration
+**Phase 3 Status**: ✅ **Dashboard Complete** - Interactive React dashboard with real-time backend integration, article visualization, and scraping controls.
 
----
+## ✨ Features
 
-## 🔄 Technical Architecture & Workflow
+### 🔄 Automated Content Pipeline
+- **Web Scraping**: Automated extraction of articles from BeyondChats blog
+- **Duplicate Detection**: Intelligent prevention of duplicate content storage
+- **Real-time Processing**: Live status updates and progress tracking
 
-### System Design
+### 📊 Interactive Dashboard
+- **Article Management**: View, filter, and manage scraped articles
+- **Status Tracking**: Monitor processing states (Pending, Processing, Completed)
+- **Content Comparison**: Side-by-side view of original vs AI-enhanced content
+- **Live Statistics**: Real-time metrics for total, enhanced, and pending articles
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    USER / TRIGGER                           │
-│  (Browser: GET /api/scrape or Scheduled Task)              │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│              EXPRESS SERVER (Port 5000)                     │
-│            api/server.js                                    │
-│  - Routes HTTP requests                                     │
-│  - Connects to MongoDB Atlas                                │
-│  - Validates MONGO_URI on startup                          │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│           SCRAPER INITIALIZATION                            │
-│      scraper/node-scraper.js                               │
-│  1. Detect last page number via pagination                 │
-│  2. Collect article URLs from multiple pages               │
-│  3. Filter out tag/category pages                          │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│         MULTI-PAGE ARTICLE DISCOVERY                        │
-│  - Scan from Page N down to Page N-2 (or until 5 found)    │
-│  - Extract article links: /blogs/[article-slug]/           │
-│  - EXCLUDE: /tag/, /category/, pagination links            │
-│  - Result: Array of article URLs                           │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│      DUPLICATE DETECTION & FILTERING                        │
-│  For each article URL:                                      │
-│  - Query MongoDB for existing original_url                 │
-│  - Skip if already in database (avoid duplicates)          │
-│  - Proceed with new articles only                          │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│        ARTICLE CONTENT EXTRACTION                           │
-│  For each article URL:                                      │
-│  1. Fetch HTML via axios                                   │
-│  2. Parse with Cheerio (jQuery-like syntax)                │
-│  3. Extract:                                                │
-│     - Title from <h1> tag                                  │
-│     - Content from .entry-content, .post_content, <article>│
-│  4. Validate: Both title and content must exist            │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│        MONGODB STORAGE & PERSISTENCE                        │
-│  Create new Article document:                               │
-│  {                                                          │
-│    title: "Article Title",                                 │
-│    original_url: "https://beyondchats.com/blogs/...",     │
-│    original_content: "Full scraped HTML text...",          │
-│    status: "Pending",  // Ready for Phase 2 processing    │
-│    reference_links: [],  // To be filled in Phase 2       │
-│    published_date: "2025-12-31T15:08:48.159Z"             │
-│  }                                                          │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│         API RESPONSE & COMPLETION                           │
-│  {"message": "Scraping started/completed. Check logs."}    │
-│  Browser/Client receives confirmation                      │
-└─────────────────────────────────────────────────────────────┘
-```
+### 🚀 Backend API
+- **RESTful Endpoints**: Complete CRUD operations for articles
+- **Scraping Triggers**: API-driven content ingestion
+- **MongoDB Integration**: Persistent storage with Mongoose ODM
 
-### Execution Flow Example
+### 🎨 Modern UI/UX
+- **Responsive Design**: Mobile-first approach with Tailwind CSS
+- **Interactive Components**: Expandable article cards with smooth animations
+- **Real-time Updates**: Live connection status and data synchronization
 
-**Request:**
-```bash
-curl http://localhost:5000/api/scrape
-```
+## 🛠️ Tech Stack
 
-**Server Logs Output:**
-```
-✅ MongoDB Connected Successfully
-🔄 Scraper endpoint called...
---- Starting Scraper ---
-Detected Last Page: 15
-Fetching Page 15: https://beyondchats.com/blogs/page/15/
-Found 1 articles on page 15
-Fetching Page 14: https://beyondchats.com/blogs/page/14/
-Found 9 articles on page 14
-Total articles to scrape: 5
-Article URLs: [
-  'https://beyondchats.com/blogs/introduction-to-chatbots/',
-  'https://beyondchats.com/blogs/sales-chatbots/',
-  'https://beyondchats.com/blogs/boost-conversion-rate-using-chatbots/',
-  'https://beyondchats.com/blogs/common-customer-service-issues/',
-  'https://beyondchats.com/blogs/chatbots-vs-live-chat/'
-]
-Skipping (Already Exists): https://beyondchats.com/blogs/introduction-to-chatbots/
-✅ Saved: From 0 to Sales Hero: How Sales Chatbots Increase Conversions
-✅ Saved: Can Chatbots Boost Your E-commerce Conversions?
-✅ Saved: 10 Solutions for Common Customer Service Issues
-✅ Saved: Chatbots Vs Live Chat: What is best?
---- Scraping Completed ---
-```
+### Backend
+- **Node.js** - Runtime environment
+- **Express.js** - Web framework
+- **MongoDB** - NoSQL database
+- **Mongoose** - ODM for MongoDB
+- **Cheerio** - HTML parsing and scraping
+- **Axios** - HTTP client
 
-**Result in Database:**
-```json
-GET /api/articles returns:
-[
-  { title: "Chatbots Vs Live Chat: What is best?", url: "..." },
-  { title: "10 Solutions for Common Customer Service Issues", url: "..." },
-  { title: "Can Chatbots Boost Your E-commerce Conversions?", url: "..." },
-  { title: "From 0 to Sales Hero: How Sales Chatbots...", url: "..." },
-  { title: "Chatbots Magic: Beginner's Guidebook", url: "..." }
-]
-```
+### Frontend
+- **React 19** - UI library
+- **Vite** - Build tool and dev server
+- **Tailwind CSS v4** - Utility-first CSS framework
+- **Lucide React** - Icon library
+- **Axios** - API communication
 
----
+### Development
+- **ESLint** - Code linting
+- **Nodemon** - Auto-restart for development
 
 ## 📁 Project Structure
 
 ```
 BeyoundChats-tasks/
 ├── api/
-│   └── server.js                 # Express server + CRUD endpoints
+│   └── server.js              # Express server with REST API
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx            # Main dashboard component
+│   │   ├── components/
+│   │   │   └── ArticleCard.jsx # Article display component
+│   │   ├── index.css          # Tailwind CSS imports
+│   │   └── main.jsx           # React entry point
+│   ├── package.json           # Frontend dependencies
+│   ├── vite.config.js         # Vite configuration
+│   └── tailwind.config.js     # Tailwind configuration
 ├── scraper/
-│   └── node-scraper.js           # Multi-page web scraper with filtering
+│   └── node-scraper.js        # Web scraping logic
 ├── models/
-│   └── Article.js                # MongoDB schema (5 fields + timestamps)
-├── .env.example                  # Template for MongoDB URI
-├── .gitignore                    # Excludes .env, node_modules
-├── package.json                  # Dependencies: express, mongoose, axios, cheerio
-└── README.md                    
+│   └── Article.js             # MongoDB schema
+├── database/
+│   └── mongo.js               # Legacy database config
+├── package.json               # Root dependencies
+├── .env.example               # Environment template
+└── README.md                  # This file
 ```
-
----
-
-## 🛠️ Core Components
-
-### 1. **api/server.js** - Express API Server
-**Role**: HTTP server and MongoDB gateway
-
-**Key Functions**:
-- `mongoose.connect()` - Establishes MongoDB Atlas connection
-- `GET /` - Returns API documentation
-- `GET /api/scrape` - Triggers web scraper
-- `GET /api/articles` - Retrieves all stored articles (sorted by newest)
-- `GET /api/articles/:id` - Get single article by MongoDB ID
-- `PUT /api/articles/:id` - Update article (for Phase 2)
-- `DELETE /api/articles/:id` - Remove article
-
-**Startup Sequence**:
-```javascript
-1. Load .env (MONGO_URI, PORT)
-2. Initialize Express app
-3. Connect to MongoDB (logs: "✅ MongoDB Connected Successfully")
-4. Start listening on port 5000
-5. Ready for requests
-```
-
-### 2. **scraper/node-scraper.js** - Web Scraper Engine
-**Role**: Automated article discovery and content extraction
-
-**Execution Steps**:
-
-**Step 1: Pagination Detection**
-```javascript
-- GET https://beyondchats.com/blogs/
-- Parse pagination: Find maximum page number
-- Detects: "Last Page: 15"
-```
-
-**Step 2: Multi-Page Article Collection**
-```javascript
-- Iterate from Page 15 → Page 14 → Page 13 (until 5+ articles found)
-- For each page:
-  * Fetch HTML with axios
-  * Parse with Cheerio
-  * Extract links matching /blogs/ pattern
-  * Exclude: /tag/, /category/, pagination links
-- Result: Array of 5 article URLs
-```
-
-**Step 3: Duplicate Detection**
-```javascript
-- For each URL:
-  * Query: Article.findOne({ original_url: url })
-  * If found: Skip with "Skipping (Already Exists)"
-  * If not found: Proceed to scrape
-```
-
-**Step 4: Content Extraction**
-```javascript
-- For each new article:
-  * Fetch HTML (axios)
-  * Parse HTML (cheerio)
-  * Extract title: $article('h1').first().text()
-  * Extract content: $article('.entry-content, .post_content, article').text()
-  * Validate: Both must exist and be non-empty
-```
-
-**Step 5: Database Persistence**
-```javascript
-- Create Article document:
-  * title: "Article Title"
-  * original_url: "https://beyondchats.com/blogs/..."
-  * original_content: "Full HTML text content"
-  * status: "Pending" (for Phase 2 processing)
-  * reference_links: [] (empty, filled in Phase 2)
-  * published_date: Current timestamp
-```
-
-### 3. **models/Article.js** - MongoDB Schema
-**Role**: Defines data structure
-
-```javascript
-ArticleSchema = {
-  title: String,              // Article heading
-  original_url: String,       // Source URL (unique index)
-  original_content: String,   // Raw scraped HTML text
-  updated_content: String,    // Phase 2: Processed content
-  status: Enum,              // 'Pending' | 'Processing' | 'Completed' | 'Failed'
-  reference_links: [String], // Phase 2: Extracted URLs
-  published_date: Date       // Auto-set to current time
-}
-```
-
----
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js v14+
-- MongoDB Atlas account (or local MongoDB)
-- npm/yarn
+- Node.js (v18 or higher)
+- MongoDB (local installation or MongoDB Atlas)
+- npm or yarn
 
 ### Installation
 
-1. **Clone & Install**:
+1. **Clone the repository:**
 ```bash
 git clone https://github.com/ADSingh2004/BeyoundChats-tasks.git
 cd BeyoundChats-tasks
+```
+
+2. **Install root dependencies:**
+```bash
 npm install
 ```
 
-2. **Configure MongoDB**:
+3. **Install frontend dependencies:**
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+4. **Configure environment variables:**
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env`:
+Edit `.env` with your MongoDB connection:
 ```env
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/content_pipeline?retryWrites=true&w=majority
+MONGO_URI=mongodb://localhost:27017/content_pipeline
 PORT=5000
 ```
 
-3. **MongoDB Atlas Setup**:
-   - Create cluster on MongoDB Atlas
-   - Whitelist IP: Settings → Security → Network Access → Add 0.0.0.0/0
-   - Get connection string from "Connect" button
-   - Replace username, password in MONGO_URI
+### MongoDB Setup
 
-### Run Server
+**Local MongoDB:**
+- Install MongoDB Community Server
+- Start MongoDB: `mongod`
+- Use: `MONGO_URI=mongodb://localhost:27017/content_pipeline`
 
-**Development** (with auto-restart):
+**MongoDB Atlas (Cloud):**
+- Create cluster on MongoDB Atlas
+- Get connection string
+- Use: `MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/content_pipeline`
+
+## 🏃 Running the Application
+
+### Development Mode
+
+1. **Start the backend server:**
 ```bash
 npm run dev
-# OR
-nodemon api/server.js
 ```
+Server runs on `http://localhost:5000`
 
-**Production**:
+2. **Start the frontend dashboard:**
 ```bash
-node api/server.js
+cd frontend
+npm run dev
 ```
+Dashboard runs on `http://localhost:5173`
 
-**Output**:
-```
-Server running on port 5000
-✅ MongoDB Connected Successfully
-```
+3. **Access the application:**
+Open `http://localhost:5173` in your browser
 
-### Test the Scraper
+### Production Mode
 
-1. **Trigger Scraper** (Browser or cURL):
+1. **Build the frontend:**
 ```bash
-curl http://localhost:5000/api/scrape
+cd frontend
+npm run build
 ```
 
-2. **Fetch Articles**:
+2. **Start the backend:**
 ```bash
-curl http://localhost:5000/api/articles | jq .
+npm start
 ```
 
-3. **Get Single Article**:
+## 📡 API Endpoints
+
+### Articles
+- `GET /api/articles` - Get all articles
+- `GET /api/articles/:id` - Get single article
+- `PUT /api/articles/:id` - Update article
+- `DELETE /api/articles/:id` - Delete article
+
+### Scraping
+- `POST /api/scrape` - Trigger article scraping
+
+### Example API Usage
 ```bash
-curl http://localhost:5000/api/articles/{article_id} | jq .
+# Get all articles
+curl http://localhost:5000/api/articles
+
+# Trigger scraping
+curl -X POST http://localhost:5000/api/scrape
 ```
 
----
+## 📊 Data Schema
 
-## 📊 API Reference
-
-### Endpoints
-
-| Method | Endpoint | Purpose | Response |
-|--------|----------|---------|----------|
-| GET | `/` | API info & endpoints | `{message, status, endpoints}` |
-| GET | `/api/scrape` | Start scraper | `{message: "Scraping..."}` |
-| GET | `/api/articles` | Get all articles | `[{Article}]` |
-| GET | `/api/articles/:id` | Get article by ID | `{Article}` |
-| PUT | `/api/articles/:id` | Update article | `{Article}` |
-| DELETE | `/api/articles/:id` | Delete article | `{message}` |
-
-### Example Responses
-
-**GET /api/articles**:
-```json
-[
-  {
-    "_id": "507f1f77bcf86cd799439011",
-    "title": "From 0 to Sales Hero: How Sales Chatbots...",
-    "original_url": "https://beyondchats.com/blogs/sales-chatbots/",
-    "original_content": "Full article text...",
-    "status": "Pending",
-    "reference_links": [],
-    "published_date": "2025-12-31T15:08:48.159Z",
-    "__v": 0
-  }
-]
-```
-
----
-
-## 🔧 Configuration
-
-### Environment Variables (.env)
-
-```env
-# MongoDB Atlas connection
-MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/content_pipeline?retryWrites=true&w=majority
-
-# Server port
-PORT=5000
-```
-
-### Scraper Configuration (node-scraper.js)
-
-**Base URL**:
+### Article Model
 ```javascript
-const BASE_URL = 'https://beyondchats.com/blogs/';
+{
+  title: String,                    // Article title
+  original_url: String,             // Source URL (unique)
+  original_content: String,         // Scraped content
+  updated_content: String,          // AI-enhanced content (Phase 2)
+  status: String,                   // 'Pending', 'Processing', 'Completed'
+  reference_links: [String],        // Additional links
+  published_date: Date              // Auto-generated timestamp
+}
 ```
 
-**Number of Articles**: 
-```javascript
-const targets = articleLinks.slice(0, 5);  // Change 5 to desired count
-```
+## 🔄 Development Phases
 
-**Content Selectors**:
-```javascript
-const content = $article('.entry-content, .post_content, article').text();
-// Add/modify selectors if blog HTML changes
-```
+### Phase 1: Foundation ✅
+- Web scraping implementation
+- MongoDB integration
+- Basic API endpoints
+- Duplicate detection
 
----
+### Phase 2: AI Enhancement 🔄
+- Content processing pipeline
+- AI-powered content enhancement
+- Reference link extraction
+- Advanced filtering
 
-## 🐛 Error Handling
+### Phase 3: Dashboard & Integration ✅
+- React dashboard creation
+- Real-time backend integration
+- Interactive article management
+- Responsive UI/UX design
 
-### MongoDB Connection Error
-```
-Error: Could not connect to any servers in your MongoDB Atlas cluster
-```
-**Fix**: 
-- Ensure IP whitelist includes your current IP (0.0.0.0/0 for dev)
-- Verify MONGO_URI format in .env
-- Check network connectivity
+## 🐛 Troubleshooting
 
-### Article Not Saved (No Content)
-```
-⚠️ Skipped (No content): url - Title: "" Content length: 3087
-```
-**Cause**: Title selector didn't match (likely tag page)
-**Solution**: Scraper filters these automatically, no action needed
+### Common Issues
 
-### HTML Parse Errors
-```
-Error fetching url: ...
-```
-**Cause**: Network timeout or invalid URL
-**Fix**: Scraper logs and continues; retry if needed
+**MongoDB Connection Failed:**
+- Ensure MongoDB is running locally or check Atlas credentials
+- Verify `MONGO_URI` in `.env`
 
----
+**Port Already in Use:**
+- Change `PORT` in `.env` or kill existing process
 
-## 🔜 Phase 2 (Future)
+**Frontend Build Errors:**
+- Clear node_modules: `rm -rf node_modules && npm install`
+- Check Node.js version compatibility
 
-The `status` field is set to "Pending" for Phase 2 processing:
+**Scraper Not Working:**
+- Website structure may have changed
+- Update CSS selectors in `scraper/node-scraper.js`
 
-- **Content Enrichment**: Parse and clean HTML content
-- **Reference Extraction**: Find URLs in articles (`reference_links`)
-- **Entity Recognition**: Identify key topics/entities
-- **Status Update**: Change status to "Processing" → "Completed"
-- **Integration**: Connect to AI/NLP services for content enhancement
+## 🤝 Contributing
 
----
-
-## 📈 Performance & Scalability
-
-### Current Performance
-- **Execution Time**: ~15-20 seconds per 5-article run
-- **Throughput**: ~60 articles/hour
-- **Storage**: ~100KB per article (full HTML)
-- **Concurrent Requests**: Single scraper at a time (queuing in Phase 2)
-
-### Optimization Opportunities
-- Parallel article fetching (Promise.all)
-- Article deduplication by content hash
-- Scheduled scraping (cron jobs)
-- Caching layer (Redis)
-- Database indexing on `original_url`
-
----
-
-## 🛡️ Security Considerations
-
-⚠️ **Production Deployment**:
-- Never commit `.env` file (already in .gitignore)
-- Use strong MongoDB credentials
-- Rotate API keys regularly
-- Implement rate limiting on scraper
-- Add request authentication (JWT/API keys)
-- Monitor for scraping policy violations
-
----
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Commit changes: `git commit -am 'Add feature'`
+4. Push to branch: `git push origin feature-name`
+5. Submit a pull request
 
 ## 📄 License
 
-ISC
+ISC License
+
+## 📞 Support
+
+For issues or questions, please open an issue on [GitHub](https://github.com/ADSingh2004/BeyoundChats-tasks/issues)
 
 ---
 
-**Last Updated**: December 31, 2025  
-**Phase**: 1 - Web Scraping & Storage (✅ Complete)  
-**Next Phase**: Content Enrichment & Processing
+**Version**: 1.0.2  
+**Phase**: 3 - Dashboard Complete  
+**Last Updated**: December 31, 2025</content>
+<parameter name="filePath">/workspaces/BeyoundChats-tasks/README.md
