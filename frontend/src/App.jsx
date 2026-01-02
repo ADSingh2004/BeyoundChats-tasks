@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react'; // Removed useEffect import
 import axios from 'axios';
 import ArticleCard from './components/ArticleCard';
 import { Loader, AlertCircle, Zap, RotateCw, Database, Bot, LayoutTemplate } from 'lucide-react';
@@ -13,26 +13,36 @@ function App() {
   const getApiUrl = () => {
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
+
+    // 1. Production (GitHub Pages) - MANUAL OVERRIDE REQUIRED
+    // You must paste your Public Codespace Backend URL here for the deployed site to work.
+    if (hostname.includes('github.io')) {
+      // REPLACE THIS URL below with your actual Codespace backend URL (ending in -5000.app.github.dev)
+      return 'https://probable-space-funicular-ww5qj6gwgw9fgg5p-5000.app.github.dev';
+    }
+
+    // 2. Development (GitHub Codespace Preview)
     if (hostname.includes('.app.github.dev')) {
       const baseHostname = hostname.replace(/-\d+\.app\.github\.dev/, '-5000.app.github.dev');
       return `https://${baseHostname}`;
     }
+
+    // 3. Local Development (Localhost)
     if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:5000';
+
+    // Fallback
     return `${protocol}//${hostname}:5000`;
   };
 
   const API_BASE_URL = getApiUrl();
   
-  // --- AXIOS CONFIGURATION ---
-  // Updated timeout to 5 minutes (300000ms) to handle long scraper runs
   const axiosInstance = axios.create({ 
     baseURL: API_BASE_URL, 
     timeout: 300000 
   });
-  // -------------------------------------------------------------------
 
   // Fetch logic
-  const fetchArticles = useCallback(async () => {
+  const fetchArticles = async () => {
     setLoading(true);
     setError(null);
     try {
@@ -44,16 +54,13 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [axiosInstance]);
+  };
 
   const handleScrape = async () => {
     setScraping(true);
     setError(null);
     try {
-      // This request might take 1-2 minutes, so the 300,000ms timeout prevents a crash
       await axiosInstance.get('/api/scrape');
-      
-      // Wait a moment before refreshing to ensure DB writes are done
       setTimeout(() => { 
         fetchArticles(); 
         setScraping(false); 
@@ -64,9 +71,10 @@ function App() {
     }
   };
 
-  useEffect(() => { fetchArticles(); }, [fetchArticles]);
+  // --- CHANGED: Disabled Auto-Refresh ---
+  // useEffect(() => { fetchArticles(); }, []);
+  // --------------------------------------
 
-  // Calculate Stats
   const stats = {
     total: articles.length,
     completed: articles.filter(a => a.status === 'Completed').length,
@@ -75,8 +83,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-700">
-      
-      {/* Decorative Background Mesh */}
       <div className="fixed inset-0 z-0 opacity-40 pointer-events-none">
         <div className="absolute top-0 left-0 w-96 h-96 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
         <div className="absolute top-0 right-0 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
@@ -84,12 +90,8 @@ function App() {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        
-        {/* Header Dashboard */}
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl border border-white/20 p-8 mb-10">
           <div className="flex flex-col lg:flex-row justify-between items-center gap-8">
-            
-            {/* Title Section */}
             <div className="text-center lg:text-left">
               <div className="inline-flex items-center justify-center px-4 py-1.5 mb-4 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold tracking-wider uppercase">
                 <Bot size={14} className="mr-2" /> Content Intelligence Pipeline
@@ -102,7 +104,6 @@ function App() {
               </p>
             </div>
 
-            {/* Stats Cards */}
             <div className="grid grid-cols-3 gap-4 w-full lg:w-auto">
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
                 <div className="text-3xl font-bold text-slate-800">{stats.total}</div>
@@ -118,7 +119,6 @@ function App() {
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
               <button
                 onClick={handleScrape}
@@ -144,7 +144,6 @@ function App() {
             </div>
           </div>
 
-          {/* Error Message */}
           {error && (
             <div className="mt-8 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg flex items-center animate-pulse">
               <AlertCircle className="text-red-500 mr-3" size={20} />
@@ -153,7 +152,6 @@ function App() {
           )}
         </div>
 
-        {/* Content Grid */}
         <div className="space-y-6">
           <div className="flex items-center justify-between px-2">
             <h2 className="text-xl font-bold text-slate-800 flex items-center">
@@ -168,16 +166,16 @@ function App() {
           {loading && articles.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 bg-white/50 rounded-3xl border border-slate-200 border-dashed">
               <Loader size={48} className="text-indigo-500 animate-spin mb-4" />
-              <p className="text-slate-500 font-medium">Syncing database...</p>
+              <p className="text-slate-500 font-medium">Fetching data...</p>
             </div>
           ) : articles.length === 0 ? (
             <div className="text-center py-24 bg-white rounded-3xl border border-slate-200 shadow-sm">
               <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Database size={32} className="text-slate-400" />
               </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">Database Empty</h3>
+              <h3 className="text-xl font-bold text-slate-800 mb-2">Database Empty or Not Loaded</h3>
               <p className="text-slate-500 max-w-md mx-auto mb-8">
-                The content pipeline is ready. Click "Run Scraper" to fetch the latest articles from the source.
+                Click "Refresh" to load articles, or "Run Scraper" to fetch new content.
               </p>
             </div>
           ) : (
