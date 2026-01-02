@@ -7,5 +7,14 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    proxy: {
+      // During local development, route /api/* to the backend to avoid CORS
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '/api')
+      }
+    },
   },
 })

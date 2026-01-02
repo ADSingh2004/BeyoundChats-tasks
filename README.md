@@ -232,6 +232,34 @@ curl -X POST http://localhost:5000/api/scrape
 - Website structure may have changed
 - Update CSS selectors in `scraper/node-scraper.js`
 
+## ☁️ Using Managed MongoDB (MongoDB Atlas)
+
+If you prefer a managed database (recommended for production), use MongoDB Atlas and set the `MONGO_URI` environment variable.
+
+1. Sign up at https://www.mongodb.com/cloud/atlas and create a free cluster.
+2. Create a database user and whitelist your IP (or allow access from anywhere during testing).
+3. Get the connection string ("Connect your application") and replace `<username>`, `<password>`, and the DB name.
+4. Add the connection string to your `.env` file (or set `MONGO_URI` in your hosting environment):
+
+```env
+MONGO_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/content_pipeline
+PORT=5000
+```
+
+5. Restart the backend:
+
+```bash
+npm run dev
+```
+
+6. Verify the API returns real data (and CORS headers are present):
+
+```bash
+curl -i -H "Origin: https://example-5173.app.github.dev" http://localhost:5000/api/articles
+```
+
+If you want, I can help provision an Atlas cluster and guide you through securely setting credentials (note: I cannot create Atlas resources directly without your Atlas account credentials).
+
 ## 🤝 Contributing
 
 1. Fork the repository

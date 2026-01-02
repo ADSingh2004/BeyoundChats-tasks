@@ -6,25 +6,21 @@ const Article = require('../models/Article');
 const { scrapeOldestArticles } = require('../scraper/node-scraper');
 
 const app = express();
-
-// CORS Configuration - Allow all origins for testing
-app.use(cors({
+const corsOptions = {
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: false
-}));
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'Accept'],
+  credentials: false,
+};
 
-// Additional CORS headers
+// CORS middleware (single, early application)
+app.use(cors(corsOptions));
+
+// Fallback headers for any error paths (keeps responses consistent)
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
   next();
 });
 
@@ -81,10 +77,15 @@ app.get('/api/scrape', async (req, res) => {
 // 2. GET All Articles (Read)
 app.get('/api/articles', async (req, res) => {
   try {
+    // If MongoDB is not connected, return an empty array so frontend can still render
+    if (mongoose.connection.readyState !== 1) {
+      console.warn('MongoDB not connected - returning empty articles array');
+      return res.json([]);
+    }
+
     const articles = await Article.find()
       .sort({ published_date: -1 })
       .limit(10); // Changed limit to 10 so you see more data
-      // REMOVED: .select('-original_content -updated_content'); 
     res.json(articles);
   } catch (error) {
     res.status(500).json({ error: error.message });

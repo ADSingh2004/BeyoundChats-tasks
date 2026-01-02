@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import ArticleCard from './components/ArticleCard';
 import { Loader, AlertCircle, Zap, RotateCw, Database, Bot, LayoutTemplate } from 'lucide-react';
@@ -32,7 +32,7 @@ function App() {
   // -------------------------------------------------------------------
 
   // Fetch logic
-  const fetchArticles = async () => {
+  const fetchArticles = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -44,7 +44,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [axiosInstance]);
 
   const handleScrape = async () => {
     setScraping(true);
@@ -64,7 +64,7 @@ function App() {
     }
   };
 
-  useEffect(() => { fetchArticles(); }, []);
+  useEffect(() => { fetchArticles(); }, [fetchArticles]);
 
   // Calculate Stats
   const stats = {
