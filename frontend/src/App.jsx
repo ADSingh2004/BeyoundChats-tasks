@@ -14,10 +14,9 @@ function App() {
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
 
-    // 1. Production (GitHub Pages) - MANUAL OVERRIDE REQUIRED
-    // You must paste your Public Codespace Backend URL here for the deployed site to work.
+    // 1. Production (GitHub Pages)
+    // This connects your deployed frontend to your Codespace backend
     if (hostname.includes('github.io')) {
-      // REPLACE THIS URL below with your actual Codespace backend URL (ending in -5000.app.github.dev)
       return 'https://probable-space-funicular-ww5qj6gwgw9fgg5p-5000.app.github.dev';
     }
 
